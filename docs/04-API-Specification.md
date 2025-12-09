@@ -1482,6 +1482,31 @@ X-RateLimit-Reset: 1642156800
 - **PHP:** `composer require unified-ai-assistant/sdk`
 - **Ruby:** `gem install unified-ai-assistant`
 
+### Postman Collection
+
+A complete Postman collection is available for API testing:
+
+**Download:** [Postman Collection](https://api.unified-ai-assistant.com/docs/postman-collection.json)
+
+**Import Instructions:**
+1. Open Postman
+2. Click "Import"
+3. Paste the collection URL or upload the JSON file
+4. Set environment variables:
+   - `base_url`: `https://api.unified-ai-assistant.com/v1`
+   - `api_key`: Your API key
+   - `auth_token`: JWT token (after login)
+
+**Postman Environment Variables:**
+```json
+{
+  "base_url": "https://api.unified-ai-assistant.com/v1",
+  "api_key": "your_api_key_here",
+  "auth_token": "",
+  "company_id": "your_company_uuid"
+}
+```
+
 ### Example Usage (JavaScript)
 
 ```javascript
@@ -1510,6 +1535,64 @@ const invoices = await client.invoices.list({
   status: 'unpaid',
   limit: 50
 });
+```
+
+### Example Usage (Python)
+
+```python
+from unified_ai_assistant import UnifiedAIAssistant
+
+client = UnifiedAIAssistant(
+    api_key='your_api_key',
+    environment='production'
+)
+
+# Create invoice
+invoice = client.invoices.create(
+    customer_id='customer_uuid',
+    invoice_date='2024-01-15',
+    line_items=[
+        {
+            'description': 'CNC Machining Services',
+            'quantity': 10,
+            'unit_price': 1500.00
+        }
+    ]
+)
+
+# Get invoices
+invoices = client.invoices.list(
+    status='unpaid',
+    limit=50
+)
+```
+
+### Example Usage (cURL)
+
+```bash
+# Authentication
+curl -X POST https://api.unified-ai-assistant.com/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123"
+  }'
+
+# Create invoice (with token)
+curl -X POST https://api.unified-ai-assistant.com/v1/invoices \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_id": "customer_uuid",
+    "invoice_date": "2024-01-15",
+    "line_items": [
+      {
+        "description": "CNC Machining Services",
+        "quantity": 10,
+        "unit_price": 1500.00
+      }
+    ]
+  }'
 ```
 
 ---

@@ -997,6 +997,11 @@ readinessProbe:
 
 #### Pods Not Starting
 
+**Symptoms:**
+- Pods stuck in `Pending` or `CrashLoopBackOff` state
+- Pods not ready after deployment
+
+**Diagnosis:**
 ```bash
 # Check pod status
 kubectl get pods -n unified-ai-production
@@ -1004,31 +1009,252 @@ kubectl get pods -n unified-ai-production
 # Check logs
 kubectl logs <pod-name> -n unified-ai-production
 
-# Describe pod
+# Describe pod for events
 kubectl describe pod <pod-name> -n unified-ai-production
+
+# Check events
+kubectl get events -n unified-ai-production --sort-by='.lastTimestamp'
 ```
+
+**Common Causes & Solutions:**
+
+1. **Insufficient Resources:**
+   ```bash
+   # Check node resources
+   kubectl top nodes
+   
+   # Check pod resource requests
+   kubectl describe pod <pod-name> | grep -A 5 "Limits\|Requests"
+   
+   # Solution: Scale cluster or reduce resource requests
+   ```
+
+2. **Image Pull Errors:**
+   ```bash
+   # Check image pull secrets
+   kubectl get secrets -n unified-ai-production
+   
+   # Verify image exists
+   docker pull <registry>/unified-ai-api:v1.0.0
+   
+   # Solution: Fix image registry credentials or image path
+   ```
+
+3. **Configuration Errors:**
+   ```bash
+   # Validate configuration
+   kubectl get configmap -n unified-ai-production
+   kubectl get secrets -n unified-ai-production
+   
+   # Check environment variables
+   kubectl exec <pod-name> -n unified-ai-production -- env
+   ```
 
 #### Database Connection Issues
 
+**Symptoms:**
+- Application cannot connect to database
+- Connection timeout errors
+- Authentication failures
+
+**Diagnosis:**
 ```bash
-# Test database connectivity
+# Test database connectivity from pod
 kubectl run -it --rm debug --image=postgres:15 --restart=Never -- psql -h <db-host> -U postgres -d unified_ai
 
 # Check database logs (RDS)
 aws rds describe-db-log-files --db-instance-identifier unified-ai-db
+aws rds download-db-log-file-portion --db-instance-identifier unified-ai-db --log-file-name error/postgresql.log.2024-01-15
+
+# Test from application pod
+kubectl exec -it <api-pod> -n unified-ai-production -- nc -zv <db-host> 5432
 ```
+
+**Common Causes & Solutions:**
+
+1. **Network Issues:**
+   - Verify security groups allow traffic
+   - Check VPC routing
+   - Verify database is in same VPC or has proper peering
+
+2. **Authentication Issues:**
+   ```bash
+   # Verify secrets
+   kubectl get secret db-credentials -n unified-ai-production -o yaml
+   
+   # Test credentials
+   psql -h <db-host> -U <username> -d unified_ai
+   ```
+
+3. **Database Overload:**
+   ```bash
+   # Check database connections
+   psql -h <db-host> -U postgres -c "SELECT count(*) FROM pg_stat_activity;"
+   
+   # Check slow queries
+   psql -h <db-host> -U postgres -c "SELECT * FROM pg_stat_statements ORDER BY total_time DESC LIMIT 10;"
+   ```
 
 #### High CPU/Memory Usage
 
+**Symptoms:**
+- Slow response times
+- Pods being killed (OOMKilled)
+- High resource utilization
+
+**Diagnosis:**
 ```bash
 # Check resource usage
 kubectl top pods -n unified-ai-production
-
-# Check node resources
 kubectl top nodes
 
-# Scale up if needed
-kubectl scale deployment unified-ai-api --replicas=5 -n unified-ai-production
+# Check pod resource limits
+kubectl describe pod <pod-name> -n unified-ai-production | grep -A 10 "Limits\|Requests"
+
+# Check for OOM kills
+kubectl get events -n unified-ai-production | grep OOMKilled
+```
+
+**Solutions:**
+
+1. **Scale Horizontally:**
+   ```bash
+   # Scale deployment
+   kubectl scale deployment unified-ai-api --replicas=5 -n unified-ai-production
+   
+   # Or enable autoscaling
+   kubectl autoscale deployment unified-ai-api --min=3 --max=10 --cpu-percent=70 -n unified-ai-production
+   ```
+
+2. **Optimize Application:**
+   - Review application logs for inefficient queries
+   - Check for memory leaks
+   - Optimize database queries
+
+3. **Increase Resources:**
+   ```yaml
+   # Update deployment with higher limits
+   resources:
+     requests:
+       cpu: 1000m
+       memory: 2Gi
+     limits:
+       cpu: 4000m
+       memory: 8Gi
+   ```
+
+#### SSL/TLS Certificate Issues
+
+**Symptoms:**
+- Certificate errors in browser
+- HTTPS not working
+- cert-manager errors
+
+**Diagnosis:**
+```bash
+# Check certificate status
+kubectl get certificates -n unified-ai-production
+kubectl describe certificate unified-ai-tls -n unified-ai-production
+
+# Check cert-manager logs
+kubectl logs -n cert-manager deployment/cert-manager
+
+# Check certificate secret
+kubectl get secret unified-ai-tls -n unified-ai-production
+```
+
+**Solutions:**
+
+1. **Certificate Not Issued:**
+   - Verify DNS records point to ingress
+   - Check ClusterIssuer configuration
+   - Verify Let's Encrypt rate limits
+
+2. **Certificate Expired:**
+   - cert-manager should auto-renew
+   - Check renewal logs
+   - Manually trigger renewal if needed
+
+#### Ingress Not Routing Traffic
+
+**Symptoms:**
+- 404 errors
+- Connection refused
+- Wrong service responding
+
+**Diagnosis:**
+```bash
+# Check ingress configuration
+kubectl get ingress -n unified-ai-production
+kubectl describe ingress unified-ai-ingress -n unified-ai-production
+
+# Check ingress controller logs
+kubectl logs -n ingress-nginx deployment/ingress-nginx-controller
+
+# Test from inside cluster
+kubectl run -it --rm test --image=curlimages/curl --restart=Never -- curl -H "Host: app.unified-ai-assistant.com" http://unified-ai-web-service:80
+```
+
+**Solutions:**
+
+1. **Verify Service Names:**
+   - Ensure ingress backend service names match actual services
+   - Check service ports match
+
+2. **DNS Configuration:**
+   - Verify DNS A records point to ingress IP
+   - Check DNS propagation
+
+### Performance Troubleshooting
+
+#### Slow API Responses
+
+**Check:**
+- Database query performance
+- Redis cache hit rates
+- External API response times
+- Network latency
+
+**Tools:**
+```bash
+# Application performance monitoring
+# Use APM tools (DataDog, New Relic, Elastic APM)
+
+# Database slow query log
+# Enable in PostgreSQL configuration
+
+# Redis monitoring
+redis-cli --latency
+redis-cli INFO stats
+```
+
+### Logging & Debugging
+
+#### View Application Logs
+
+```bash
+# Real-time logs
+kubectl logs -f <pod-name> -n unified-ai-production
+
+# Logs from all pods in deployment
+kubectl logs -f deployment/unified-ai-api -n unified-ai-production
+
+# Logs from previous container (if crashed)
+kubectl logs <pod-name> -n unified-ai-production --previous
+
+# Logs with timestamps
+kubectl logs <pod-name> -n unified-ai-production --timestamps
+```
+
+#### Centralized Logging (ELK Stack)
+
+```bash
+# Access Kibana
+kubectl port-forward -n logging svc/kibana 5601:5601
+# Open http://localhost:5601
+
+# Search logs in Elasticsearch
+curl -X GET "elasticsearch:9200/_search?q=error" | jq
 ```
 
 ### Support Contacts
@@ -1036,6 +1262,13 @@ kubectl scale deployment unified-ai-api --replicas=5 -n unified-ai-production
 - **DevOps Team:** devops@unified-ai-assistant.com
 - **On-Call:** +1-XXX-XXX-XXXX
 - **Documentation:** docs.unified-ai-assistant.com
+- **Emergency:** See on-call rotation schedule
+
+### Additional Resources
+
+- [Kubernetes Troubleshooting Guide](https://kubernetes.io/docs/tasks/debug/)
+- [PostgreSQL Troubleshooting](https://www.postgresql.org/docs/current/logging.html)
+- [NGINX Ingress Troubleshooting](https://kubernetes.github.io/ingress-nginx/troubleshooting/)
 
 ---
 
