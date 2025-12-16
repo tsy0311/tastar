@@ -27,3 +27,6 @@ echo "Installation complete!"
 echo "To activate the virtual environment in the future, run:"
 echo "  source venv/bin/activate"
 
+
+
+

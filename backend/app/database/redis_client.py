@@ -27,3 +27,6 @@ async def close_redis():
         redis_client = None
         logger.info("Redis connection closed")
 
+
+
+

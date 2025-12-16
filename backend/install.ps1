@@ -25,3 +25,6 @@ Write-Host "`nInstallation complete!" -ForegroundColor Green
 Write-Host "To activate the virtual environment in the future, run:" -ForegroundColor Cyan
 Write-Host "  .\venv\Scripts\Activate.ps1" -ForegroundColor Cyan
 
+
+
+
