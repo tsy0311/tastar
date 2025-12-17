@@ -60,7 +60,8 @@ class APIClient {
             method: 'POST',
             body: JSON.stringify({ email, password })
         });
-        this.setToken(data.access_token);
+        // Backend returns 'token', not 'access_token'
+        this.setToken(data.token);
         return data;
     }
 
