@@ -2,7 +2,7 @@
 API Router - Main router that includes all endpoint routers
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, companies, customers, invoices, payments
+from app.api.v1.endpoints import auth, users, companies, customers, invoices, payments, cms
 
 api_router = APIRouter()
 
@@ -13,4 +13,5 @@ api_router.include_router(companies.router, prefix="/companies", tags=["Companie
 api_router.include_router(customers.router, prefix="/customers", tags=["Customers"])
 api_router.include_router(invoices.router, prefix="/invoices", tags=["Invoices"])
 api_router.include_router(payments.router, prefix="/payments", tags=["Payments"])
+api_router.include_router(cms.router, prefix="/cms", tags=["CMS & AI Suggestions"])
 
