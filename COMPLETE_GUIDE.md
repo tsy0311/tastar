@@ -26,16 +26,23 @@ When you run the .exe on any computer, it:
 ### Build Steps
 
 ```bash
-# 1. Install frontend dependencies
+# 1. Install root dependencies (for workspace)
+cd /path/to/tastar
+npm install
+
+# 2. Install frontend dependencies
 cd frontend
 npm install
 
-# 2. Build the application
+# 3. Build the application
 npm run build:win
 
-# 3. Output location
-# Windows: frontend/build/Unified AI Assistant Setup.exe
+# 4. Output location
+# Windows: frontend/build/Unified AI Assistant Setup 1.0.0.exe
+# Size: ~78MB
 ```
+
+**Note:** The build process downloads Electron and build tools automatically. This may take a few minutes on first build.
 
 The installer will:
 - Bundle frontend + backend
