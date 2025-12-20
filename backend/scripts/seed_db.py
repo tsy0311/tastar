@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from sqlalchemy.orm import Session
 from app.database.connection import SessionLocal, init_db
-from app.database.models import Company, User, Role, Customer, UserRole
+from app.database.models import Company, User, Role, Customer, user_roles_table
 from app.core.security import get_password_hash
 from app.core.logging import setup_logging
 
@@ -90,9 +90,14 @@ async def seed_database():
             db.commit()
             db.refresh(user)
             
-            # Assign admin role
-            user_role = UserRole(user_id=user.id, role_id=admin_role.id)
-            db.add(user_role)
+            # Assign admin role by inserting into association table
+            from sqlalchemy import insert
+            stmt = insert(user_roles_table).values(
+                user_id=user.id,
+                role_id=admin_role.id,
+                assigned_by=user.id
+            )
+            db.execute(stmt)
             db.commit()
             
             logger.info("Created default admin user: admin@demo.com / admin123")

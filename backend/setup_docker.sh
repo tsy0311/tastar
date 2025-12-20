@@ -75,3 +75,6 @@ echo "  - Database: unified_ai"
 echo "  - User: postgres"
 echo "  - Password: postgres"
 
+
+
+

@@ -121,7 +121,12 @@ class User(Base):
     
     # Relationships
     company = relationship("Company", back_populates="users")
-    roles = relationship("Role", secondary=user_roles_table, back_populates="users")
+    roles = relationship(
+        "Role", 
+        secondary=user_roles_table, 
+        back_populates="users",
+        foreign_keys=[user_roles_table.c.user_id, user_roles_table.c.role_id]
+    )
     
     __table_args__ = (
         CheckConstraint(
@@ -148,7 +153,12 @@ class Role(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    users = relationship("User", secondary=user_roles_table, back_populates="roles")
+    users = relationship(
+        "User", 
+        secondary=user_roles_table, 
+        back_populates="roles",
+        foreign_keys=[user_roles_table.c.user_id, user_roles_table.c.role_id]
+    )
     
     __table_args__ = (
         UniqueConstraint("company_id", "name", name="uk_roles_company_name"),

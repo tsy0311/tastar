@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.database.connection import Base
 from app.database.models import *  # noqa: F401, F403
+from app.database.cms_models import *  # noqa: F401, F403
 from app.core.config import settings
 
 # this is the Alembic Config object
