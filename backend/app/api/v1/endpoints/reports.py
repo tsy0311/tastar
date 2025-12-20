@@ -1,5 +1,6 @@
 """
 Financial Reporting Endpoints
+Enhanced with caching and query optimization
 """
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -11,10 +12,13 @@ from decimal import Decimal
 from app.database.connection import get_db
 from app.database.models import Invoice, Payment, Bill, Customer, Supplier, User
 from app.core.dependencies import get_current_active_user
+from app.core.cache import cached
+from app.core.query_optimizer import optimize_list_query
 
 router = APIRouter()
 
 @router.get("/aging-receivables")
+@cached(ttl=1800, key_prefix="reports")
 async def get_aging_receivables(
     as_of_date: Optional[date] = Query(None, description="Report date (defaults to today)"),
     current_user: User = Depends(get_current_active_user),
@@ -92,6 +96,7 @@ async def get_aging_receivables(
     }
 
 @router.get("/aging-payables")
+@cached(ttl=1800, key_prefix="reports")
 async def get_aging_payables(
     as_of_date: Optional[date] = Query(None, description="Report date (defaults to today)"),
     current_user: User = Depends(get_current_active_user),
@@ -169,6 +174,7 @@ async def get_aging_payables(
     }
 
 @router.get("/profit-loss")
+@cached(ttl=3600, key_prefix="reports")
 async def get_profit_loss(
     start_date: date = Query(..., description="Start date"),
     end_date: date = Query(..., description="End date"),
@@ -229,6 +235,7 @@ async def get_profit_loss(
     }
 
 @router.get("/balance-sheet")
+@cached(ttl=3600, key_prefix="reports")
 async def get_balance_sheet(
     as_of_date: date = Query(..., description="Balance sheet date"),
     current_user: User = Depends(get_current_active_user),

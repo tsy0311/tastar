@@ -5,7 +5,8 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     auth, users, companies, customers, invoices, payments, 
     documents, ai_assistant, demo, suppliers, materials,
-    purchase_orders, quotations, bills, matching, reports
+    purchase_orders, quotations, bills, matching, reports,
+    analytics, integrations
 )
 
 # Try to import CMS router if it exists
@@ -46,6 +47,12 @@ api_router.include_router(matching.router, prefix="/matching", tags=["Transactio
 
 # Financial Reporting
 api_router.include_router(reports.router, prefix="/reports", tags=["Financial Reports"])
+
+# Analytics & Business Intelligence
+api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
+
+# Integrations
+api_router.include_router(integrations.router, prefix="/integrations", tags=["Integrations"])
 
 # CMS (if available)
 if HAS_CMS:

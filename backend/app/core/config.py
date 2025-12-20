@@ -64,6 +64,19 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
+    # Integration Settings
+    ERP_TYPE: str = os.getenv("ERP_TYPE", "")
+    ERP_API_KEY: str = os.getenv("ERP_API_KEY", "")
+    ERP_BASE_URL: str = os.getenv("ERP_BASE_URL", "")
+    
+    ACCOUNTING_TYPE: str = os.getenv("ACCOUNTING_TYPE", "")
+    ACCOUNTING_API_KEY: str = os.getenv("ACCOUNTING_API_KEY", "")
+    ACCOUNTING_BASE_URL: str = os.getenv("ACCOUNTING_BASE_URL", "")
+    
+    # Multi-Tenant
+    MULTI_TENANT_ENABLED: bool = os.getenv("MULTI_TENANT_ENABLED", "False").lower() == "true"
+    TENANT_ISOLATION_STRICT: bool = os.getenv("TENANT_ISOLATION_STRICT", "True").lower() == "true"
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
