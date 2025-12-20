@@ -2,15 +2,18 @@
 API Router - Main router that includes all endpoint routers
 """
 from fastapi import APIRouter
-<<<<<<< HEAD
 from app.api.v1.endpoints import (
     auth, users, companies, customers, invoices, payments, 
     documents, ai_assistant, demo, suppliers, materials,
     purchase_orders, quotations, bills, matching, reports
 )
-=======
-from app.api.v1.endpoints import auth, users, companies, customers, invoices, payments, cms
->>>>>>> 7f3ef9c67d131cfb3c61541bc1daed68b9fbcf2f
+
+# Try to import CMS router if it exists
+try:
+    from app.api.v1.endpoints import cms
+    HAS_CMS = True
+except ImportError:
+    HAS_CMS = False
 
 api_router = APIRouter()
 
@@ -21,7 +24,8 @@ api_router.include_router(companies.router, prefix="/companies", tags=["Companie
 api_router.include_router(customers.router, prefix="/customers", tags=["Customers"])
 api_router.include_router(invoices.router, prefix="/invoices", tags=["Invoices"])
 api_router.include_router(payments.router, prefix="/payments", tags=["Payments"])
-<<<<<<< HEAD
+
+# Document & AI Module
 api_router.include_router(documents.router, prefix="/documents", tags=["Documents"])
 api_router.include_router(ai_assistant.router, prefix="/ai", tags=["AI Assistant"])
 api_router.include_router(demo.router, prefix="/demo", tags=["Demo"])
@@ -42,7 +46,8 @@ api_router.include_router(matching.router, prefix="/matching", tags=["Transactio
 
 # Financial Reporting
 api_router.include_router(reports.router, prefix="/reports", tags=["Financial Reports"])
-=======
-api_router.include_router(cms.router, prefix="/cms", tags=["CMS & AI Suggestions"])
->>>>>>> 7f3ef9c67d131cfb3c61541bc1daed68b9fbcf2f
+
+# CMS (if available)
+if HAS_CMS:
+    api_router.include_router(cms.router, prefix="/cms", tags=["CMS & AI Suggestions"])
 
