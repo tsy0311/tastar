@@ -1,0 +1,48 @@
+# ML Training Data and Models
+# These should not be committed to git (too large)
+
+# Data files
+data/raw/*
+data/processed/*
+data/samples/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/samples/.gitkeep
+
+# Trained models
+models/**/*.pkl
+models/**/*.h5
+models/**/*.pt
+models/**/*.pth
+models/**/*.onnx
+models/**/*.pb
+models/**/*.json
+models/**/*.png
+models/**/*.csv
+!models/.gitkeep
+!models/**/.gitkeep
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Model checkpoints
+checkpoints/
+*.ckpt
+
+# Logs
+logs/
+*.log
+
+# Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+

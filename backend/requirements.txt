@@ -61,4 +61,9 @@ ipykernel==6.27.1
 matplotlib==3.8.2
 seaborn==0.13.0
 
+# Dataset Downloading
+datasets==2.14.7
+kaggle==1.5.16
+gdown==4.7.1
+
 
