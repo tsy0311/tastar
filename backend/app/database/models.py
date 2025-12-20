@@ -65,6 +65,12 @@ class Company(Base):
     users = relationship("User", back_populates="company")
     customers = relationship("Customer", back_populates="company")
     invoices = relationship("Invoice", back_populates="company")
+    suppliers = relationship("Supplier")
+    materials = relationship("Material")
+    purchase_orders = relationship("PurchaseOrder")
+    quotations = relationship("Quotation")
+    documents = relationship("Document")
+    bills = relationship("Bill")
     
     __table_args__ = (
         CheckConstraint(
@@ -431,5 +437,543 @@ class PaymentAllocation(Base):
         ),
         Index("idx_payment_allocations_payment_id", "payment_id"),
         Index("idx_payment_allocations_invoice_id", "invoice_id"),
+    )
+
+# ============================================================================
+# Purchasing Module Models
+# ============================================================================
+
+class Supplier(Base):
+    """Supplier model"""
+    __tablename__ = "suppliers"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    
+    # Identity
+    supplier_code = Column(String(50), nullable=False)
+    name = Column(String(255), nullable=False)
+    legal_name = Column(String(255))
+    tax_id = Column(String(50))
+    
+    # Address
+    address_line1 = Column(String(255))
+    address_line2 = Column(String(255))
+    city = Column(String(100))
+    state = Column(String(100))
+    postal_code = Column(String(20))
+    country = Column(String(2))
+    
+    # Contact
+    primary_contact_name = Column(String(200))
+    primary_email = Column(String(255))
+    primary_phone = Column(String(50))
+    website = Column(String(255))
+    
+    # Financial
+    payment_terms = Column(String(50))
+    currency_code = Column(String(3), default="USD")
+    credit_limit = Column(Numeric(15, 2))
+    
+    # Performance
+    on_time_delivery_rate = Column(Numeric(5, 2))
+    quality_score = Column(Numeric(5, 2))
+    average_rating = Column(Numeric(3, 2))
+    total_orders = Column(Integer, default=0)
+    total_spent = Column(Numeric(15, 2), default=0)
+    
+    # Status
+    status = Column(String(20), default="active")
+    
+    # Risk
+    risk_score = Column(Integer)
+    risk_level = Column(String(20))
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    deleted_at = Column(DateTime)
+    
+    # Relationships
+    purchase_orders = relationship("PurchaseOrder", back_populates="supplier")
+    
+    __table_args__ = (
+        UniqueConstraint("company_id", "supplier_code", name="uk_suppliers_company_code"),
+        CheckConstraint(
+            "status IN ('active', 'inactive', 'pending', 'blacklisted')",
+            name="ck_suppliers_status"
+        ),
+        Index("idx_suppliers_company_id", "company_id"),
+        Index("idx_suppliers_code", "supplier_code"),
+        Index("idx_suppliers_status", "status"),
+    )
+
+class Material(Base):
+    """Material model"""
+    __tablename__ = "materials"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    
+    # Identification
+    material_code = Column(String(100), nullable=False)
+    material_name = Column(String(255), nullable=False)
+    description = Column(Text)
+    
+    # Classification
+    category = Column(String(100))
+    subcategory = Column(String(100))
+    material_type = Column(String(50))
+    
+    # Specifications
+    unit_of_measure = Column(String(20), nullable=False)
+    weight = Column(Numeric(10, 3))
+    dimensions = Column(String(100))
+    specifications = Column(JSONB)
+    
+    # Inventory
+    current_stock = Column(Numeric(10, 3), default=0)
+    reorder_point = Column(Numeric(10, 3), default=0)
+    reorder_quantity = Column(Numeric(10, 3))
+    safety_stock = Column(Numeric(10, 3), default=0)
+    max_stock = Column(Numeric(10, 3))
+    
+    # Pricing
+    standard_cost = Column(Numeric(15, 4))
+    average_cost = Column(Numeric(15, 4))
+    last_purchase_price = Column(Numeric(15, 4))
+    
+    # Supplier
+    preferred_supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id"))
+    
+    # Status
+    status = Column(String(20), default="active")
+    is_active = Column(Boolean, default=True)
+    
+    # Analytics
+    abc_category = Column(String(1))
+    turnover_rate = Column(Numeric(10, 2))
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    deleted_at = Column(DateTime)
+    
+    # Relationships
+    preferred_supplier = relationship("Supplier")
+    
+    __table_args__ = (
+        UniqueConstraint("company_id", "material_code", name="uk_materials_company_code"),
+        CheckConstraint(
+            "material_type IN ('raw', 'component', 'finished_good', 'consumable', 'tooling')",
+            name="ck_materials_type"
+        ),
+        CheckConstraint(
+            "status IN ('active', 'inactive', 'obsolete')",
+            name="ck_materials_status"
+        ),
+        Index("idx_materials_company_id", "company_id"),
+        Index("idx_materials_code", "material_code"),
+        Index("idx_materials_category", "category"),
+        Index("idx_materials_status", "status"),
+        Index("idx_materials_current_stock", "current_stock"),
+    )
+
+class PurchaseOrder(Base):
+    """Purchase Order model"""
+    __tablename__ = "purchase_orders"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    
+    # Identification
+    po_number = Column(String(100), nullable=False)
+    po_type = Column(String(20), default="standard")
+    
+    # Relationships
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id"), nullable=False)
+    requested_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    
+    # Dates
+    po_date = Column(Date, nullable=False)
+    required_date = Column(Date)
+    expected_delivery_date = Column(Date)
+    
+    # Financial
+    subtotal = Column(Numeric(15, 2), nullable=False)
+    tax_amount = Column(Numeric(15, 2), default=0)
+    discount_amount = Column(Numeric(15, 2), default=0)
+    shipping_amount = Column(Numeric(15, 2), default=0)
+    total_amount = Column(Numeric(15, 2), nullable=False)
+    
+    currency_code = Column(String(3), default="USD")
+    exchange_rate = Column(Numeric(10, 6), default=1)
+    
+    # Status
+    status = Column(String(20), default="draft")
+    approval_status = Column(String(20))
+    
+    # Shipping
+    shipping_address_id = Column(UUID(as_uuid=True))
+    shipping_method = Column(String(50))
+    shipping_terms = Column(String(50))
+    
+    # Terms
+    payment_terms = Column(String(50))
+    delivery_terms = Column(String(50))
+    
+    # Additional
+    notes = Column(Text)
+    internal_notes = Column(Text)
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    approved_at = Column(DateTime)
+    
+    # Relationships
+    supplier = relationship("Supplier", back_populates="purchase_orders")
+    line_items = relationship("PurchaseOrderLineItem", back_populates="purchase_order", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint("company_id", "po_number", name="uk_purchase_orders_company_number"),
+        CheckConstraint(
+            "po_type IN ('standard', 'blanket', 'contract')",
+            name="ck_purchase_orders_type"
+        ),
+        CheckConstraint(
+            "status IN ('draft', 'pending', 'sent', 'acknowledged', 'partially_received', 'received', 'closed', 'cancelled')",
+            name="ck_purchase_orders_status"
+        ),
+        Index("idx_purchase_orders_company_id", "company_id"),
+        Index("idx_purchase_orders_supplier_id", "supplier_id"),
+        Index("idx_purchase_orders_number", "po_number"),
+        Index("idx_purchase_orders_status", "status"),
+        Index("idx_purchase_orders_date", "po_date"),
+    )
+
+class PurchaseOrderLineItem(Base):
+    """Purchase Order Line Item model"""
+    __tablename__ = "purchase_order_line_items"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False)
+    
+    line_number = Column(Integer, nullable=False)
+    
+    # Material
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id"))
+    material_code = Column(String(100))
+    material_description = Column(Text, nullable=False)
+    
+    # Quantity & Pricing
+    quantity_ordered = Column(Numeric(10, 3), nullable=False)
+    quantity_received = Column(Numeric(10, 3), default=0)
+    quantity_pending = Column(Numeric(10, 3), nullable=False)
+    
+    unit_price = Column(Numeric(15, 4), nullable=False)
+    discount_percent = Column(Numeric(5, 2), default=0)
+    line_total = Column(Numeric(15, 2), nullable=False)
+    
+    # Delivery
+    expected_delivery_date = Column(Date)
+    received_date = Column(Date)
+    
+    # Status
+    status = Column(String(20), default="pending")
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    purchase_order = relationship("PurchaseOrder", back_populates="line_items")
+    material = relationship("Material")
+    
+    __table_args__ = (
+        UniqueConstraint("purchase_order_id", "line_number", name="uk_po_line_items_po_line"),
+        CheckConstraint(
+            "status IN ('pending', 'partial', 'received', 'cancelled')",
+            name="ck_po_line_items_status"
+        ),
+        Index("idx_po_line_items_po_id", "purchase_order_id"),
+    )
+
+# ============================================================================
+# Sales Module Models
+# ============================================================================
+
+class Quotation(Base):
+    """Quotation model"""
+    __tablename__ = "quotations"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    
+    # Identification
+    quotation_number = Column(String(100), nullable=False)
+    
+    # Relationships
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id"), nullable=False)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    
+    # Dates
+    quotation_date = Column(Date, nullable=False)
+    valid_until = Column(Date)
+    expiry_date = Column(Date)
+    
+    # Financial
+    subtotal = Column(Numeric(15, 2), nullable=False)
+    tax_amount = Column(Numeric(15, 2), default=0)
+    discount_amount = Column(Numeric(15, 2), default=0)
+    shipping_amount = Column(Numeric(15, 2), default=0)
+    total_amount = Column(Numeric(15, 2), nullable=False)
+    
+    currency_code = Column(String(3), default="USD")
+    exchange_rate = Column(Numeric(10, 6), default=1)
+    
+    # Status
+    status = Column(String(20), default="draft")
+    approval_status = Column(String(20))
+    
+    # Additional
+    notes = Column(Text)
+    terms_conditions = Column(Text)
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    approved_at = Column(DateTime)
+    
+    # Relationships
+    customer = relationship("Customer")
+    line_items = relationship("QuotationLineItem", back_populates="quotation", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        UniqueConstraint("company_id", "quotation_number", name="uk_quotations_company_number"),
+        CheckConstraint(
+            "status IN ('draft', 'sent', 'viewed', 'accepted', 'rejected', 'expired', 'converted')",
+            name="ck_quotations_status"
+        ),
+        Index("idx_quotations_company_id", "company_id"),
+        Index("idx_quotations_customer_id", "customer_id"),
+        Index("idx_quotations_number", "quotation_number"),
+        Index("idx_quotations_status", "status"),
+    )
+
+class QuotationLineItem(Base):
+    """Quotation Line Item model"""
+    __tablename__ = "quotation_line_items"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    quotation_id = Column(UUID(as_uuid=True), ForeignKey("quotations.id", ondelete="CASCADE"), nullable=False)
+    
+    line_number = Column(Integer, nullable=False)
+    description = Column(Text, nullable=False)
+    
+    # Product/Service
+    product_code = Column(String(100))
+    product_name = Column(String(255))
+    
+    # Quantity & Pricing
+    quantity = Column(Numeric(10, 3), nullable=False)
+    unit_price = Column(Numeric(15, 4), nullable=False)
+    discount_percent = Column(Numeric(5, 2), default=0)
+    discount_amount = Column(Numeric(15, 2), default=0)
+    line_total = Column(Numeric(15, 2), nullable=False)
+    
+    # Tax
+    tax_rate = Column(Numeric(5, 4), default=0)
+    tax_amount = Column(Numeric(15, 2), default=0)
+    
+    # Reference
+    material_id = Column(UUID(as_uuid=True))
+    job_id = Column(UUID(as_uuid=True))
+    
+    # Metadata
+    created_at = Column(DateTime, server_default=func.now())
+    
+    # Relationships
+    quotation = relationship("Quotation", back_populates="line_items")
+    
+    __table_args__ = (
+        UniqueConstraint("quotation_id", "line_number", name="uk_quotation_line_items_quotation_line"),
+        Index("idx_quotation_line_items_quotation_id", "quotation_id"),
+    )
+
+# ============================================================================
+# Document Management Models
+# ============================================================================
+
+class Document(Base):
+    """Document model for OCR and document management"""
+    __tablename__ = "documents"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    
+    # Identification
+    document_type = Column(String(50), nullable=False)
+    document_category = Column(String(50))
+    
+    # Reference
+    reference_type = Column(String(50))
+    reference_id = Column(UUID(as_uuid=True))
+    
+    # File Information
+    file_name = Column(String(255), nullable=False)
+    file_path = Column(Text, nullable=False)
+    file_size = Column(Integer)
+    mime_type = Column(String(100))
+    file_hash = Column(String(64))
+    
+    # OCR Processing
+    ocr_status = Column(String(20), default="pending")
+    ocr_processed_at = Column(DateTime)
+    ocr_confidence_score = Column(Numeric(5, 2))
+    extracted_data = Column(JSONB)
+    
+    # Validation
+    validation_status = Column(String(20))
+    validation_errors = Column(JSONB)
+    
+    # Metadata
+    uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    __table_args__ = (
+        CheckConstraint(
+            "document_type IN ('invoice', 'receipt', 'purchase_order', 'delivery_order', 'quotation', 'contract', 'other')",
+            name="ck_documents_type"
+        ),
+        CheckConstraint(
+            "ocr_status IN ('pending', 'processing', 'completed', 'failed')",
+            name="ck_documents_ocr_status"
+        ),
+        Index("idx_documents_company_id", "company_id"),
+        Index("idx_documents_type", "document_type"),
+        Index("idx_documents_reference", "reference_type", "reference_id"),
+        Index("idx_documents_ocr_status", "ocr_status"),
+    )
+
+# ============================================================================
+# Accounts Payable Models
+# ============================================================================
+
+class Bill(Base):
+    """Bill model (Vendor Bills - Accounts Payable)"""
+    __tablename__ = "bills"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    
+    # Identification
+    bill_number = Column(String(100), nullable=False)
+    vendor_invoice_number = Column(String(255))
+    
+    # Relationships
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id"), nullable=False)
+    purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id"))
+    
+    # Dates
+    bill_date = Column(Date, nullable=False)
+    due_date = Column(Date, nullable=False)
+    payment_date = Column(Date)
+    
+    # Financial
+    subtotal = Column(Numeric(15, 2), nullable=False)
+    tax_amount = Column(Numeric(15, 2), default=0)
+    discount_amount = Column(Numeric(15, 2), default=0)
+    total_amount = Column(Numeric(15, 2), nullable=False)
+    paid_amount = Column(Numeric(15, 2), default=0)
+    balance_amount = Column(Numeric(15, 2), nullable=False)
+    
+    currency_code = Column(String(3), default="USD")
+    
+    # Status
+    status = Column(String(20), default="draft")
+    approval_status = Column(String(20))
+    
+    # Additional
+    notes = Column(Text)
+    attachment_url = Column(Text)
+    
+    # Metadata
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    supplier = relationship("Supplier")
+    purchase_order = relationship("PurchaseOrder")
+    
+    __table_args__ = (
+        UniqueConstraint("company_id", "bill_number", name="uk_bills_company_number"),
+        CheckConstraint(
+            "status IN ('draft', 'pending', 'approved', 'partial', 'paid', 'overdue', 'cancelled')",
+            name="ck_bills_status"
+        ),
+        Index("idx_bills_company_id", "company_id"),
+        Index("idx_bills_supplier_id", "supplier_id"),
+        Index("idx_bills_due_date", "due_date"),
+        Index("idx_bills_status", "status"),
+    )
+
+# ============================================================================
+# Transaction Matching Models
+# ============================================================================
+
+class TransactionMatching(Base):
+    """Transaction Matching model for three-way matching"""
+    __tablename__ = "transaction_matching"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    
+    # References
+    purchase_order_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id"))
+    delivery_order_id = Column(UUID(as_uuid=True))
+    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id"))
+    bill_id = Column(UUID(as_uuid=True), ForeignKey("bills.id"))
+    
+    # Matching Status
+    match_type = Column(String(20))
+    match_status = Column(String(20), default="pending")
+    match_confidence_score = Column(Numeric(5, 2))
+    
+    # Variances
+    amount_variance = Column(Numeric(15, 2))
+    quantity_variance = Column(Numeric(10, 3))
+    date_variance = Column(Integer)
+    
+    # Tolerance
+    tolerance_threshold = Column(Numeric(5, 2))
+    within_tolerance = Column(Boolean)
+    
+    # Exceptions
+    exception_reason = Column(Text)
+    exception_resolved = Column(Boolean, default=False)
+    
+    # Metadata
+    matched_at = Column(DateTime)
+    matched_by = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    __table_args__ = (
+        CheckConstraint(
+            "match_type IN ('two_way', 'three_way')",
+            name="ck_transaction_matching_type"
+        ),
+        CheckConstraint(
+            "match_status IN ('pending', 'matched', 'partial', 'exception', 'resolved')",
+            name="ck_transaction_matching_status"
+        ),
+        Index("idx_transaction_matching_company_id", "company_id"),
+        Index("idx_transaction_matching_po_id", "purchase_order_id"),
+        Index("idx_transaction_matching_status", "match_status"),
     )
 
