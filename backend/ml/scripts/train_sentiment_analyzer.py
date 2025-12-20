@@ -14,8 +14,20 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from ml.utils.data_loader import load_sentiment_data
-from ml.utils.model_saver import save_model
+try:
+    from ml.utils.data_loader import load_sentiment_data
+except ImportError:
+    load_sentiment_data = None
+
+try:
+    from ml.utils.model_saver import save_model
+except ImportError:
+    def save_model(model, vectorizer, output_dir, accuracy):
+        import pickle
+        with open(output_dir / 'model.pkl', 'wb') as f:
+            pickle.dump(model, f)
+        with open(output_dir / 'vectorizer.pkl', 'wb') as f:
+            pickle.dump(vectorizer, f)
 
 def train_model(data_path: str = None, output_dir: str = None, test_size: float = 0.2):
     """Train sentiment analysis model"""
@@ -29,8 +41,10 @@ def train_model(data_path: str = None, output_dir: str = None, test_size: float 
     # Load data
     if data_path:
         df = pd.read_csv(data_path)
-    else:
+    elif load_sentiment_data:
         df = load_sentiment_data()
+    else:
+        raise ValueError("No data path provided and load_sentiment_data not available")
     
     print(f"Loaded {len(df)} training samples")
     print(f"Label distribution:\n{df['label'].value_counts()}")

@@ -1,123 +1,109 @@
-# Jupyter Notebooks for ML Training
+# ML Notebooks Setup Guide
 
-This directory contains Jupyter notebooks for training machine learning models.
+## Problem: scikit-learn Installation Error
 
-## Why Notebooks Are Here
+If you see `ERROR: Failed to build 'scikit-learn'`, you're likely using system Python instead of the project's virtual environment.
 
-**Notebooks are separate from models** because:
+## Quick Fix
 
-1. **Notebooks = Training Code** (small, version-controlled)
-2. **Models = Trained Artifacts** (large, generated, not in git)
+### Option 1: Use the Virtual Environment (Recommended)
 
-This is a standard ML project structure:
-- `notebooks/` - Training and experimentation code
-- `models/` - Generated model files (after training)
-- `scripts/` - Production training scripts
-- `data/` - Training datasets
+1. **Activate the venv:**
+   ```bash
+   cd backend
+   source venv/bin/activate  # macOS/Linux
+   # or
+   venv\Scripts\activate     # Windows
+   ```
 
-## Available Notebooks
+2. **Set up Jupyter kernel for venv:**
+   ```bash
+   # Make sure you're in the venv
+   pip install ipykernel
+   python -m ipykernel install --user --name=tastar --display-name="Python (tastar venv)"
+   ```
 
-### 1. Document Classification (`01_document_classification.ipynb`)
-- **Purpose**: Classify documents (invoice, PO, receipt, etc.)
-- **Output**: Model saved to `../models/document_classifier/`
-- **Run time**: ~2-5 minutes
+3. **Start Jupyter:**
+   ```bash
+   jupyter notebook
+   # or
+   jupyter lab
+   ```
 
-### 2. Sentiment Analysis (`02_sentiment_analysis.ipynb`)
-- **Purpose**: Analyze sentiment in customer communications
-- **Output**: Model saved to `../models/sentiment_analyzer/`
-- **Run time**: ~1-3 minutes
+4. **Select the correct kernel:**
+   - In Jupyter: Kernel → Change Kernel → "Python (tastar venv)"
+   - In JupyterLab: Click kernel name in top right → "Python (tastar venv)"
 
-### 3. Entity Extraction (`03_entity_extraction.ipynb`)
-- **Purpose**: Extract entities (invoice numbers, amounts, dates, etc.)
-- **Output**: Extractor saved to `../models/entity_extractor/`
-- **Run time**: ~1-2 minutes (rule-based, no training needed)
+### Option 2: Install Dependencies in System Python (Not Recommended)
 
-### 4. Invoice Data Extraction (`04_invoice_data_extraction.ipynb`)
-- **Purpose**: Extract structured data from invoices
-- **Output**: Extractor saved to `../models/invoice_extractor/`
-- **Run time**: ~1-2 minutes (rule-based)
+If you must use system Python, install build dependencies first:
 
-### 5. Demand Forecasting (`05_demand_forecasting.ipynb`)
-- **Purpose**: Predict material demand using time series
-- **Output**: Forecast saved to `../models/demand_forecaster/`
-- **Run time**: ~2-5 minutes
-
-## How to Use
-
-### Step 1: Start Jupyter
-
+**macOS:**
 ```bash
-cd backend/ml
-jupyter notebook
+xcode-select --install
+brew install gcc gfortran
+pip install --upgrade pip setuptools wheel
+pip install scikit-learn
 ```
 
-### Step 2: Open a Notebook
+**Linux:**
+```bash
+sudo apt-get install build-essential gfortran
+pip install --upgrade pip setuptools wheel
+pip install scikit-learn
+```
 
-Click on any notebook (e.g., `01_document_classification.ipynb`)
+## Verify Setup
 
-### Step 3: Run Cells
-
-1. **First cell**: Installs dependencies (`!pip install ...`)
-2. **Subsequent cells**: Run in order (Shift+Enter)
-3. **Last cells**: Save models to `../models/` folder
-
-### Step 4: Check Results
-
-After running, check `../models/` folder - you'll see:
-- Model files (`.pkl`)
-- Metadata (`.json`)
-- Visualizations (`.png`)
-
-## Notebook Structure
-
-Each notebook follows this pattern:
+Run this in a notebook cell:
 
 ```python
-# Cell 1: Install dependencies
-!pip install ...
+import sys
+print(f"Python: {sys.executable}")
+print(f"Version: {sys.version}")
 
-# Cell 2: Imports and setup
-import ...
-
-# Cell 3: Load data
-df = load_data()
-
-# Cell 4: Train model
-model = train_model(df)
-
-# Cell 5: Evaluate
-evaluate_model(model)
-
-# Cell 6: Save model
-save_model(model, '../models/...')
+# Should show venv path, not system Python
+import sklearn
+print(f"scikit-learn: {sklearn.__version__}")
 ```
-
-## Mobile/Portable Use
-
-Each notebook's **first cell includes all dependencies**, so you can:
-- Run on any machine
-- No need to pre-install packages
-- Works in Google Colab, JupyterHub, etc.
-
-## Tips
-
-1. **Run cells sequentially** - Don't skip cells
-2. **Check outputs** - Make sure each cell completes successfully
-3. **Save models** - Models are saved automatically in the last cell
-4. **Experiment** - Modify parameters and re-run to improve accuracy
 
 ## Troubleshooting
 
-### "Module not found"
-- Run the first cell again (pip install)
-- Restart kernel and run all cells
+### "Module not found" errors
 
-### "Model folder is empty"
-- Make sure you ran all cells
-- Check for errors in the notebook output
-- Models are saved in the last cell
+Make sure you selected the correct kernel (tastar venv).
 
-### "No data found"
-- Notebooks generate sample data automatically
-- Or use `prepare_data.py` to extract from database
+### Still getting build errors
 
+1. Check Python version:
+   ```bash
+   python --version
+   # Should be 3.11, 3.12, or 3.14 (not 3.15 alpha)
+   ```
+
+2. Use pre-built wheels only:
+   ```bash
+   pip install scikit-learn --only-binary :all:
+   ```
+
+3. Try a different version:
+   ```bash
+   pip install "scikit-learn>=1.5.0,<2.0.0"
+   ```
+
+## Recommended Workflow
+
+1. Always activate venv before working:
+   ```bash
+   cd backend
+   source venv/bin/activate
+   ```
+
+2. Install all dependencies once:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Use venv kernel in Jupyter notebooks
+
+4. Never install packages in system Python for this project

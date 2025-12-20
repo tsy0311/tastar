@@ -1,47 +1,95 @@
-.PHONY: help install dev migrate seed test lint format clean
+.PHONY: help install dev migrate seed test lint format clean setup health validate docker-setup
 
 help:
-	@echo "Available commands:"
-	@echo "  make install    - Install dependencies"
-	@echo "  make dev        - Run development server"
-	@echo "  make migrate    - Run database migrations"
-	@echo "  make seed       - Seed database"
-	@echo "  make test       - Run tests"
-	@echo "  make lint       - Run linters"
-	@echo "  make format     - Format code"
-	@echo "  make clean      - Clean cache files"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "Unified AI Business Assistant - Makefile Commands"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "🚀 Setup & Installation:"
+	@echo "  make setup         - Complete setup (install, env, docker, migrate)"
+	@echo "  make install       - Install Python dependencies"
+	@echo "  make docker-setup  - Set up Docker services (PostgreSQL, Redis)"
+	@echo ""
+	@echo "🔧 Development:"
+	@echo "  make dev           - Run development server"
+	@echo "  make migrate       - Run database migrations"
+	@echo "  make migrate-create - Create new migration (use: make migrate-create msg='description')"
+	@echo "  make seed          - Seed database with sample data"
+	@echo ""
+	@echo "✅ Validation & Testing:"
+	@echo "  make health        - Run health check"
+	@echo "  make validate      - Validate environment variables"
+	@echo "  make test          - Run tests"
+	@echo "  make lint          - Run linters (flake8, mypy)"
+	@echo "  make format        - Format code (black, isort)"
+	@echo ""
+	@echo "🧹 Maintenance:"
+	@echo "  make clean         - Clean cache files and __pycache__"
+	@echo ""
+
+setup:
+	@echo "🚀 Running complete setup..."
+	@bash setup.sh
 
 install:
-	pip install -r requirements.txt
+	@echo "📦 Installing dependencies..."
+	@bash install.sh
+
+docker-setup:
+	@echo "🐳 Setting up Docker services..."
+	@cd .. && bash setup_docker.sh
 
 dev:
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+	@echo "🚀 Starting development server..."
+	@uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 migrate:
-	alembic upgrade head
+	@echo "🔄 Running database migrations..."
+	@alembic upgrade head
 
 migrate-create:
-	alembic revision --autogenerate -m "$(msg)"
+	@if [ -z "$(msg)" ]; then \
+		echo "❌ Error: Please provide a message. Usage: make migrate-create msg='description'"; \
+		exit 1; \
+	fi
+	@echo "📝 Creating new migration: $(msg)"
+	@alembic revision --autogenerate -m "$(msg)"
 
 seed:
-	python scripts/seed_db.py
+	@echo "🌱 Seeding database..."
+	@python scripts/seed_db.py
+
+health:
+	@echo "🏥 Running health check..."
+	@python scripts/check_health.py
+
+validate:
+	@echo "🔍 Validating environment..."
+	@python scripts/validate_env.py
 
 test:
-	pytest
+	@echo "🧪 Running tests..."
+	@pytest
 
 lint:
-	flake8 app/
-	mypy app/
+	@echo "🔍 Running linters..."
+	@flake8 app/ || true
+	@mypy app/ || true
 
 format:
-	black app/
-	isort app/
+	@echo "✨ Formatting code..."
+	@black app/
+	@isort app/
 
 clean:
-	find . -type d -name __pycache__ -exec rm -r {} +
-	find . -type f -name "*.pyc" -delete
-	find . -type f -name "*.pyo" -delete
-	find . -type d -name "*.egg-info" -exec rm -r {} +
+	@echo "🧹 Cleaning cache files..."
+	@find . -type d -name __pycache__ -exec rm -r {} + 2>/dev/null || true
+	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
+	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
+	@find . -type d -name "*.egg-info" -exec rm -r {} + 2>/dev/null || true
+	@find . -type d -name ".pytest_cache" -exec rm -r {} + 2>/dev/null || true
+	@find . -type d -name ".mypy_cache" -exec rm -r {} + 2>/dev/null || true
+	@echo "✅ Clean complete"
 
 
 

@@ -347,12 +347,15 @@ def download_huggingface_dataset(dataset_name: str, split: str = "train", limit:
         data = []
         for item in dataset:
             text = item.get('text', '') or item.get('content', '') or str(item)
-            label = item.get('label', '') or item.get('type', '') or 'general'
+            # Preserve numeric labels (don't convert to string yet)
+            label = item.get('label', None)
+            if label is None:
+                label = item.get('type', 'general')
             
             if text:
                 data.append({
                     'text': str(text),
-                    'label': str(label)
+                    'label': label  # Keep original type (int/str)
                 })
         
         if data:
