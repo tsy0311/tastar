@@ -1,0 +1,101 @@
+{
+  "name": "unified-ai-assistant",
+  "version": "1.0.0",
+  "description": "Unified AI Business Assistant Desktop Application",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "dev": "electron . --dev"
+  },
+  "build": {
+    "appId": "com.unifiedai.assistant",
+    "productName": "Unified AI Assistant",
+    "electronVersion": "28.3.3",
+    "directories": {
+      "output": "build",
+      "buildResources": "build-resources"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*",
+      "../backend/**/*",
+      "!../backend/venv/**/*",
+      "!../backend/__pycache__/**/*",
+      "!../backend/**/__pycache__/**/*",
+      "!../backend/.pytest_cache/**/*",
+      "!../backend/logs/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!venv/**/*",
+          "!__pycache__/**/*",
+          "!**/__pycache__/**/*",
+          "!.pytest_cache/**/*",
+          "!logs/**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "publisherName": "Unified AI Assistant"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Unified AI Assistant"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "assets/icon.png"
+    }
+  },
+  "keywords": [
+    "business",
+    "accounting",
+    "crm",
+    "desktop"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "7zip-bin": "^5.2.0",
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  }
+}

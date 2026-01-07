@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified AI Business Assistant</title>
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="login-container">
+                <div class="login-box">
+                    <h1>Unified AI Assistant</h1>
+                    <p class="subtitle">Business Management System</p>
+                    
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" 
+                                   value="admin@demo.com" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" 
+                                   value="admin123" required>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Sign In</button>
+                    </form>
+                    
+                    <div id="login-error" class="error-message" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="main-app" class="screen">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h2>AI Assistant</h2>
+                </div>
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item active" data-page="dashboard">
+                        <span class="icon">📊</span> Dashboard
+                    </a>
+                    <a href="#" class="nav-item" data-page="companies">
+                        <span class="icon">🏢</span> Companies
+                    </a>
+                    <a href="#" class="nav-item" data-page="customers">
+                        <span class="icon">👥</span> Customers
+                    </a>
+                    <a href="#" class="nav-item" data-page="invoices">
+                        <span class="icon">📄</span> Invoices
+                    </a>
+                    <a href="#" class="nav-item" data-page="payments">
+                        <span class="icon">💰</span> Payments
+                    </a>
+                </nav>
+                <div class="sidebar-footer">
+                    <button id="logout-btn" class="btn btn-secondary">Logout</button>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Top Bar -->
+                <div class="topbar">
+                    <h1 id="page-title">Dashboard</h1>
+                    <div class="topbar-actions">
+                        <span id="user-info"></span>
+                    </div>
+                </div>
+
+                <!-- Page Content -->
+                <div class="content-area">
+                    <!-- Dashboard -->
+                    <div id="page-dashboard" class="page active">
+                        <div class="dashboard-grid">
+                            <div class="card">
+                                <h3>Companies</h3>
+                                <p class="stat" id="stat-companies">-</p>
+                            </div>
+                            <div class="card">
+                                <h3>Customers</h3>
+                                <p class="stat" id="stat-customers">-</p>
+                            </div>
+                            <div class="card">
+                                <h3>Invoices</h3>
+                                <p class="stat" id="stat-invoices">-</p>
+                            </div>
+                            <div class="card">
+                                <h3>Payments</h3>
+                                <p class="stat" id="stat-payments">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Companies Page -->
+                    <div id="page-companies" class="page">
+                        <div class="page-header">
+                            <h2>Companies</h2>
+                            <button class="btn btn-primary" id="btn-new-company">+ New Company</button>
+                        </div>
+                        <div id="companies-list" class="data-list"></div>
+                    </div>
+
+                    <!-- Customers Page -->
+                    <div id="page-customers" class="page">
+                        <div class="page-header">
+                            <h2>Customers</h2>
+                            <button class="btn btn-primary" id="btn-new-customer">+ New Customer</button>
+                        </div>
+                        <div id="customers-list" class="data-list"></div>
+                    </div>
+
+                    <!-- Invoices Page -->
+                    <div id="page-invoices" class="page">
+                        <div class="page-header">
+                            <h2>Invoices</h2>
+                            <button class="btn btn-primary" id="btn-new-invoice">+ New Invoice</button>
+                        </div>
+                        <div id="invoices-list" class="data-list"></div>
+                    </div>
+
+                    <!-- Payments Page -->
+                    <div id="page-payments" class="page">
+                        <div class="page-header">
+                            <h2>Payments</h2>
+                            <button class="btn btn-primary" id="btn-new-payment">+ New Payment</button>
+                        </div>
+                        <div id="payments-list" class="data-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="src/api.js"></script>
+    <script src="src/ai-autofill.js"></script>
+    <script src="src/dynamic-form.js"></script>
+    <script src="src/app.js"></script>
+</body>
+</html>
+
